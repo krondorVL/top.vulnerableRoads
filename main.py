@@ -30,6 +30,7 @@ with open("graph.txt", "w") as out:
         out.write("%d,%d,%f\n" % (row[0], row[1], row[2]))
 out.close()
 
+#G=nx.read_edgelist('graph.txt',delimiter=',', nodetype=int, create_using=nx.DiGraph(), data=(('weight',float),)) - TypeError: Bad graph type, use only non directed graph
 G=nx.read_edgelist('graph.txt',delimiter=',', nodetype=int, data=(('weight',float),))
 os.remove("graph.txt")
 
@@ -45,18 +46,19 @@ len_roads = []
 for Ncom in set(partition.values()) :
     list_nodes = [nodes for nodes in partition.keys()
                                 if partition[nodes] == Ncom]
-    for node in list_nodes:
-        G.node[node]['Ncom'] = count
-        all_edges_for_node = list(G.edges_iter(node))
-        for edge in all_edges_for_node:
-            if edge[1] not in list_nodes:
-                G.edge[edge[0]][edge[1]]['Vul'] = 1
-                vul_edges.append(edge)
-            else:
-                G.edge[edge[0]][edge[1]]['Vul'] = 0
-        all_edges_for_node = []
-    count = count + 1
-    list_nodes=[]
+
+for node in list_nodes:
+    G.node[node]['Ncom'] = count
+    all_edges_for_node = list(G.edges_iter(node))
+    for edge in all_edges_for_node:
+        if edge[1] not in list_nodes:
+            G.edge[edge[0]][edge[1]]['Vul'] = 1
+            vul_edges.append(edge)
+        else:
+            G.edge[edge[0]][edge[1]]['Vul'] = 0
+    all_edges_for_node = []
+count = count + 1
+list_nodes=[]
 
 # find most vulnerable roads
 for edge in vul_edges:
@@ -78,7 +80,11 @@ except:
 
 dbcur.execute("UPDATE Link SET Vul_Val=0.0")
 for edge in vul_edges:
-    SqlString = 'UPDATE Link SET Vul_Val = ? WHERE (node_a = ?) AND (node_b = ?);'
-    dbcur.execute(SqlString, [G.edge[edge[0]][edge[1]]['Vul_Val'], edge[0], edge[1]])
+    SqlString = 'UPDATE Link SET Vul_Val = ?, setback_a = ? WHERE (node_a = ?) AND (node_b = ?);'
+    dbcur.execute(SqlString, [G.edge[edge[0]][edge[1]]['Vul_Val'], G.edge[edge[0]][edge[1]]['Vul_Val'], edge[0], edge[1]])
+
+for node in partition:
+    SqlString = 'UPDATE Node SET z = ? WHERE (node = ?);'
+    dbcur.execute(SqlString, [partition[node], node])
 
 dbcon.close()
