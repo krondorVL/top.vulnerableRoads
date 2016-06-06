@@ -1,8 +1,10 @@
 import os
 import networkx as nx
 import community
+import numpy as np
 import sqlite3
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 dbname = "vl_ww.sqlite"
 # database connect
@@ -31,9 +33,18 @@ partition = community.best_partition(G)
 degrees = G.degree()
 
 #degree hist pic
-bins = range(1,max(degrees.values())+1)
-plt.hist(degrees.values(), bins, color='green',alpha=0.8,rwidth=0.8)
-plt.xticks(bins)
+bins = range(1,max(degrees.values())+2)
+counts = plt.hist(degrees.values(), bins, color='green',alpha=0.8,rwidth=0.8)
+cvals = counts[0].astype(int)
+plt.xticks([])
+bin_centers = 0.5 * np.diff(bins) + bins[:-1]
+for count, x in zip(cvals, bin_centers):
+    # Label the x-tics
+    plt.annotate(int(x-0.5), xy=(x, 0), xycoords=('data', 'axes fraction'),
+        xytext=(0, -3), textcoords='offset points', va='top', ha='center')
+    # Label the raw counts
+    plt.annotate(str(count), xy=(x, 0), xycoords=('data', 'axes fraction'),
+        xytext=(0, -18), textcoords='offset points', va='top', ha='center')
 plt.savefig("degreehist.png")
 plt.close()
 
